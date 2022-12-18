@@ -7,14 +7,11 @@ import {
 import { IFruit } from '../interfaces/fruit';
 
 export class Fruit {
-  name = '';
-  id = '';
+  name: string;
+  id: string;
   constructor(id: string, name: string) {
     this.name = name;
     this.id = id;
-  }
-  toString() {
-    return this.name + ', ' + this.id;
   }
 }
 
@@ -29,6 +26,7 @@ export const fruitConverter = {
 
   fromFirestore: (snapshot: QueryDocumentSnapshot<DocumentData>, options?: SnapshotOptions) => {
     const data = snapshot.data(options);
-    return new Fruit(data.name, data.id);
+    // console.log(data);
+    return new Fruit(snapshot.id, data.name);
   },
 };

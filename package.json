@@ -19,7 +19,6 @@
     "firebase": "^9.15.0",
     "js-cookie": "^3.0.1",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^6.6.5",
     "next": "12.3.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",

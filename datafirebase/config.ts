@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, query, where, DocumentData, QueryDocumentSnapshot, SnapshotOptions, DocumentReference, WithFieldValue } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, query, where, DocumentData, QueryDocumentSnapshot, SnapshotOptions, DocumentReference, WithFieldValue, deleteDoc } from 'firebase/firestore';
 
 // See: https://firebase.google.com/docs/web/learn-more#config-object
 const firebaseConfig = {
@@ -17,5 +17,5 @@ const firebase = initializeApp(firebaseConfig);
 // Initialize Cloud Firestore and get a reference to the service
 const firestore = getFirestore(firebase);
 
-export { collection, firestore, addDoc, doc, getDoc, getDocs, setDoc, query, where };
+export { collection, firestore, addDoc, doc, getDoc, getDocs, setDoc, query, where, deleteDoc };
 export type { DocumentData, QueryDocumentSnapshot, SnapshotOptions, DocumentReference, WithFieldValue };

@@ -9,51 +9,66 @@ import {
   setDoc,
   query,
   where,
+  deleteDoc
 } from '../datafirebase/config';
+import { IFruit } from '../interfaces/fruit';
 import { Fruit, fruitConverter } from '../models';
 
 // CRUD
 
-const createFruit = async (fruitName: string) => {
+/**
+ * CREATE: It creates a new fruit document in the fruits collection
+ * @param {string} fruitName - string - The name of the fruit to create.
+ * @returns A Promise that resolves to an IFruit or null.
+ */
+const createFruit = async (fruitName: string): Promise<IFruit | null> => {
   try {
-    const docRef = await addDoc(collection(firestore, 'fruits'), {
-      name: fruitName.toLowerCase(),
-    });
-    // console.log('Document written with ID: ', fruit.id);
-    // const newFruit = fruitConverter.toFirestore(docRef);
-    return docRef;
+    const docRef = await addDoc(collection(firestore, 'fruits'), { name: fruitName.toUpperCase() });
+    const { id } = docRef;
+
+    const docSnap = await getDoc(docRef);
+    const { name } = docSnap.data() as { name: string };
+
+    return new Fruit(id, name);
   } catch (error) {
     console.error('Error adding document: ', error);
     return null;
   }
 };
 
-const readFruit = async (id: string) => {
-  try {
-    // docRef: Name Document
-    const docRef = doc(firestore, 'fruits', id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      console.log('Document data:', docSnap.data());
-      return docSnap.data();
-    } else {
-      // doc.data() will be undefined in this case
-      console.log('No such document!');
-      return null;
-    }
-  } catch (error) {
-    console.log('An error here', error);
-    return null;
-  }
-};
+// const readFruit = async (id: string) => {
+//   try {
+//     // docRef: Name Document
+//     const docRef = doc(firestore, 'fruits', `fruits/${id}`);
+//     const docSnap = await getDoc(docRef);
+//     if (docSnap.exists()) {
+//       // console.log('Document data:', docSnap.data());
+//       return docSnap.data();
+//     } else {
+//       // doc.data() will be undefined in this case
+//       console.log('No such document!');
+//       return null;
+//     }
+//   } catch (error) {
+//     console.log('An error here', error);
+//     return null;
+//   }
+// };
 
-const getAllFruits = async () => {
-  let fruits: DocumentData = [];
+/**
+ * READ: It returns a promise that resolves to an array of fruits
+ * @returns An array of IFruit objects.
+ */
+const readAllFruits = async () => {
+  let fruits: IFruit[] = [];
   try {
     const querySnapshot = await getDocs(collection(firestore, 'fruits'));
-    querySnapshot.forEach(doc => {
-      fruits.push(fruitConverter.fromFirestore(doc));
+    // console.log('querySnapshot:', querySnapshot);
+    querySnapshot.forEach(docSnap => {
+      // console.log('docSnap.id:', docSnap.id);
+      fruits.push(fruitConverter.fromFirestore(docSnap));
     });
+
     return fruits;
   } catch (error) {
     console.log('An error here', error);
@@ -61,17 +76,22 @@ const getAllFruits = async () => {
   }
 };
 
-const updateFruit = async (id: string, nameFruit: string) => {
+
+const updateFruit = async (id: string, fruitName: string) => {
   // Name Collection
   const fruitsRef = collection(firestore, 'fruits');
 
   await setDoc(doc(fruitsRef, id), {
-    name: nameFruit.toLowerCase(),
+    name: fruitName.toUpperCase(),
   });
 };
 
+/**
+ * DELETE: It deletes a fruit document from the fruits collection in Firestore
+ * @param {string} id - The id of the document to delete.
+ */
 const deleteFruit = async (id: string) => {
-  // const { data } = await axios.get<Interface[]>('/endpoint');
+  await deleteDoc(doc(firestore, "fruits", id));
 };
 
 // Search
@@ -93,4 +113,4 @@ const searchDoc = async (search: string) => {
   }
 };
 
-export { createFruit, readFruit, getAllFruits, updateFruit, deleteFruit, searchDoc };
+export { createFruit, readAllFruits, updateFruit, deleteFruit, searchDoc };
