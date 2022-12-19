@@ -24,15 +24,63 @@ import { Fruit, fruitConverter } from '../models';
 const createFruit = async (fruitName: string): Promise<boolean> => {
   try {
     await addDoc(collection(firestore, 'fruits'), { name: fruitName.toUpperCase() });
-    // const docRef = await addDoc(collection(firestore, 'fruits'), { name: fruitName.toUpperCase() });
-    // const { id } = docRef;
-
-    // const docSnap = await getDoc(docRef);
-    // const { name } = docSnap.data() as { name: string };
-
     return true;
   } catch (error) {
     console.error('Error adding document: ', error);
+    return false;
+  }
+};
+
+/**
+ * READ: It returns a promise that resolves to an array of fruits
+ * @returns An array of IFruit objects or null.
+ */
+const readAllFruits = async (): Promise<IFruit[] | null> => {
+  let fruits: IFruit[] = [];
+  try {
+    const querySnapshot = await getDocs(collection(firestore, 'fruits'));
+    querySnapshot.forEach(docSnap => {
+      fruits.push(fruitConverter.fromFirestore(docSnap));
+    });
+
+    return fruits;
+  } catch (error) {
+    console.log('An error here', error);
+    return null;
+  }
+};
+
+/**
+ * UPDATE: It updates a fruit document in the fruits collection with the given id and fruitName
+ * @param {string} id - string - The id of the document to update
+ * @param {string} fruitName - string - The name of the fruit to update
+ * @returns A promise that resolves to a boolean.
+ */
+const updateFruit = async (id: string, fruitName: string): Promise<boolean> => {
+  // Name Collection
+  try {
+    const fruitsRef = collection(firestore, 'fruits');
+    await setDoc(doc(fruitsRef, id), {
+      name: fruitName.toUpperCase(),
+    });
+    return true;
+  } catch (error) {
+    console.log('An error here', error);
+    return false;
+  }
+};
+
+/**
+ * DELETE: It deletes a fruit document from the fruits collection in the firestore database
+ * @param {string} id - string - The id of the fruit to delete
+ * @returns A promise that resolves to a boolean.
+ */
+const deleteFruit = async (id: string): Promise<boolean> => {
+  try {
+    await deleteDoc(doc(firestore, 'fruits', id));
+    return true;
+  } catch (error) {
+    console.log('An error here', error);
     return false;
   }
 };
@@ -56,67 +104,23 @@ const createFruit = async (fruitName: string): Promise<boolean> => {
 //   }
 // };
 
-/**
- * READ: It returns a promise that resolves to an array of fruits
- * @returns An array of IFruit objects.
- */
-const readAllFruits = async () => {
-  let fruits: IFruit[] = [];
-  try {
-    const querySnapshot = await getDocs(collection(firestore, 'fruits'));
-    // console.log('querySnapshot:', querySnapshot);
-    querySnapshot.forEach(docSnap => {
-      // console.log('docSnap.id:', docSnap.id);
-      fruits.push(fruitConverter.fromFirestore(docSnap));
-    });
-
-    return fruits;
-  } catch (error) {
-    console.log('An error here', error);
-    return null;
-  }
-};
-
-const updateFruit = async (id: string, fruitName: string) => {
-  // Name Collection
-  try {
-    const fruitsRef = collection(firestore, 'fruits');
-
-    await setDoc(doc(fruitsRef, id), {
-      name: fruitName.toUpperCase(),
-    });
-    return true;
-  } catch (error) {
-    console.log('An error here', error);
-    return false;
-  }
-};
-
-/**
- * DELETE: It deletes a fruit document from the fruits collection in Firestore
- * @param {string} id - The id of the document to delete.
- */
-const deleteFruit = async (id: string) => {
-  await deleteDoc(doc(firestore, 'fruits', id));
-};
-
 // Search
-const searchDoc = async (search: string) => {
-  try {
-    let fruits = [];
-    const q = query(collection(firestore, 'fruits'), where('name', '==', search));
+// const searchDoc = async (search: string) => {
+//   try {
+//     let fruits = [];
+//     const q = query(collection(firestore, 'fruits'), where('name', '==', search));
 
-    const querySnapshot = await getDocs(q);
-    querySnapshot.forEach(doc => {
-      fruits.push(doc.data());
+//     const querySnapshot = await getDocs(q);
+//     querySnapshot.forEach(doc => {
+//       fruits.push(doc.data());
 
-      // doc.data() is never undefined for query doc snapshots
-      console.log(doc.id, ' => ', doc.data());
-    });
-  } catch (error) {
-    console.log('An error here', error);
-    return null;
-  }
-};
+//       // doc.data() is never undefined for query doc snapshots
+//       console.log(doc.id, ' => ', doc.data());
+//     });
+//   } catch (error) {
+//     console.log('An error here', error);
+//     return null;
+//   }
+// };
 
-export { createFruit, readAllFruits, updateFruit, deleteFruit, searchDoc };
+export { createFruit, readAllFruits, updateFruit, deleteFruit };

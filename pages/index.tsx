@@ -91,8 +91,6 @@ export const FruitsPage = () => {
 
   // ? UPDATE Function
   const onUpdateFruit = async (id: string, newName: string) => {
-    console.log(`id`, id);
-    console.log(`newName`, newName);
     setIsButtonDisabled(true);
     setShowError(false);
 
@@ -111,23 +109,23 @@ export const FruitsPage = () => {
     setIsButtonDisabled(false);
 
     getAllFruits();
+
     setValue('id', undefined);
     setValue('fruit', '');
+
     setIsEditing(false);
   };
 
   // !: DELETE Function
   const onDeleteFruit = async (id: string) => {
     await deleteFruit(id);
-
     getAllFruits();
   };
 
   const onEditFruit = async (id: string, fruitName: string) => {
-    // console.log(id, fruitName);
-    setIsEditing(true);
     setValue('id', id);
     setValue('fruit', fruitName);
+    setIsEditing(true);
   };
 
   const handleFruitSubmit = ({ id, fruit }: { id?: string; fruit: string }) => {
