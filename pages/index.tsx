@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+// Notificaciones MUI
+import { VariantType, useSnackbar } from 'notistack';
+
 // import { Box, Button, Divider, Grid, Link, TextField, Typography } from '@mui/material'; // No usar asi porque es mas lento en dev.
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -10,20 +13,21 @@ import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-// import List from '@mui/material/List';
-// import ListItem from '@mui/material/ListItem';
-// import ListItemAvatar from '@mui/material/ListItemAvatar';
-// import ListItemIcon from '@mui/material/ListItemIcon';
-// import ListItemText from '@mui/material/ListItemText';
-// import Avatar from '@mui/material/Avatar';
-// import IconButton from '@mui/material/IconButton';
-// import FormGroup from '@mui/material/FormGroup';
-// import FormControlLabel from '@mui/material/FormControlLabel';
-// import Checkbox from '@mui/material/Checkbox';
-// import FolderIcon from '@mui/icons-material/Folder';
-// import DeleteIcon from '@mui/icons-material/Delete';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Avatar from '@mui/material/Avatar';
+import IconButton from '@mui/material/IconButton';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import FolderIcon from '@mui/icons-material/Folder';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ListItemButton from '@mui/material/ListItemButton';
 
-import { AuthLayout } from '../components/layouts';
+import { FruitLayout } from '../components/layouts';
 
 import ErrorOutline from '@mui/icons-material/ErrorOutline';
 import {
@@ -40,6 +44,9 @@ type FormData = {
 };
 
 export const FruitsPage = () => {
+  // Notificaciones MUI
+  const { enqueueSnackbar } = useSnackbar();
+
   const {
     setValue,
     register,
@@ -67,6 +74,7 @@ export const FruitsPage = () => {
     if (!newFruit) {
       setIsButtonDisabled(false);
       setShowError(true);
+      enqueueSnackbar('!No se pudo crear la fruta!', { variant: 'error' });
 
       setTimeout(() => {
         setShowError(false);
@@ -75,6 +83,9 @@ export const FruitsPage = () => {
       return;
     }
     setIsButtonDisabled(false);
+    enqueueSnackbar(`!Se creó la fruta ${fruit.toUpperCase()} satisfactoriamente!`, {
+      variant: 'success',
+    });
 
     setValue('id', undefined);
     setValue('fruit', '');
@@ -99,6 +110,7 @@ export const FruitsPage = () => {
     if (!newFruit) {
       setIsButtonDisabled(false);
       setShowError(true);
+      enqueueSnackbar('!No se pudo crear la fruta!', { variant: 'error' });
 
       setTimeout(() => {
         setShowError(false);
@@ -107,6 +119,9 @@ export const FruitsPage = () => {
       return;
     }
     setIsButtonDisabled(false);
+    enqueueSnackbar(`!Se Actualizó la fruta ${newName.toUpperCase()} satisfactoriamente! 💯`, {
+      variant: 'success',
+    });
 
     getAllFruits();
 
@@ -119,6 +134,7 @@ export const FruitsPage = () => {
   // !: DELETE Function
   const onDeleteFruit = async (id: string) => {
     await deleteFruit(id);
+    enqueueSnackbar('!Me eliminaste! 😵', { variant: 'info' });
     getAllFruits();
   };
 
@@ -136,11 +152,22 @@ export const FruitsPage = () => {
     }
   };
 
+  const onCancelEdit = () => {
+    setIsEditing(false);
+    setValue('fruit', '');
+    setValue('id', '');
+  };
+
   return (
-    <AuthLayout title={'Create New Fruit'}>
+    <FruitLayout title={'Create New Fruit'}>
       <form onSubmit={handleSubmit(handleFruitSubmit)} noValidate>
-        <Box sx={{ width: 350, padding: '10px 20px' }}>
-          <Grid container spacing={2}>
+        <Box
+          display='flex'
+          flexDirection='column'
+          alignItems='center'
+          sx={{ width: 500, padding: '10px 20px' }}
+        >
+          <Grid container spacing={2} sx={{ width: 400 }}>
             <Grid item xs={12}>
               <Typography variant='h1' component='h1'>
                 Welcome
@@ -186,18 +213,40 @@ export const FruitsPage = () => {
             </Grid>
 
             {isEditing ? (
-              <Grid item xs={12}>
-                <Button
-                  type='submit'
-                  color='secondary'
-                  className='circular-btn'
-                  size='large'
-                  fullWidth
-                  disabled={isButtonDisabled}
-                >
-                  EDIT FRUIT
-                </Button>
-              </Grid>
+              <>
+                <Grid item xs={12}>
+                  <Button
+                    type='submit'
+                    color='secondary'
+                    className='circular-btn'
+                    size='large'
+                    fullWidth
+                    disabled={isButtonDisabled}
+                  >
+                    EDIT FRUIT
+                  </Button>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Button
+                    onClick={onCancelEdit}
+                    color='primary'
+                    className='circular-btn'
+                    size='large'
+                    fullWidth
+                    disabled={isButtonDisabled}
+                  >
+                    CANCEL
+                  </Button>
+                  <br />
+                  <br />
+                  <Divider>
+                    <Chip label='Fruit List' />
+                  </Divider>
+                  <br />
+                  <br />
+                </Grid>
+              </>
             ) : (
               <Grid item xs={12}>
                 <Button
@@ -210,37 +259,49 @@ export const FruitsPage = () => {
                 >
                   CREATE FRUIT
                 </Button>
+                <br />
+                <br />
+                <Divider>
+                  <Chip label='Fruit List' />
+                </Divider>
+                <br />
+                <br />
               </Grid>
             )}
-
-            <Divider />
-
-            {fruits.map(({ id, name }) => (
-              <Grid container spacing={2} key={id} sx={{ mb: 1 }}>
-                <Grid item xs={7}>
-                  <Box display={'flex'} flexDirection='column'>
-                    <Typography variant='body1'>
-                      {name}, {id}
-                    </Typography>
-                  </Box>
-                </Grid>
-
-                <Grid item xs={2} display='flex' flexDirection='column' alignItems='center'>
-                  <Button variant='text' color='secondary' onClick={() => onEditFruit(id, name)}>
-                    EDIT
-                  </Button>
-                </Grid>
-                <Grid item xs={2} display='flex' flexDirection='column' alignItems='center'>
-                  <Button variant='text' color='secondary' onClick={() => onDeleteFruit(id)}>
-                    DELETE
-                  </Button>
-                </Grid>
-              </Grid>
-            ))}
           </Grid>
+
+          {fruits.map(({ id, name }) => (
+            <Grid
+              container
+              justifyContent={'center'}
+              spacing={2}
+              key={id}
+              sx={{ mb: 2.5, border: '1px solid rgba(0,0,0, .1)', borderRadius: 2 }}
+            >
+              <Grid item xs={7}>
+                <Box display={'flex'} flexDirection='column'>
+                  <Typography variant='body1'>{`ID: ${id}`}</Typography>
+                  <Typography variant='body1' color={'blue'}>
+                    {`Name: ${name}`}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={2} display='flex' flexDirection='column' alignItems='center'>
+                <Button variant='text' color='secondary' onClick={() => onEditFruit(id, name)}>
+                  EDIT
+                </Button>
+              </Grid>
+              <Grid item xs={2} display='flex' flexDirection='column' alignItems='center'>
+                <Button variant='text' color='error' onClick={() => onDeleteFruit(id)}>
+                  <DeleteIcon />
+                </Button>
+              </Grid>
+            </Grid>
+          ))}
         </Box>
       </form>
-    </AuthLayout>
+    </FruitLayout>
   );
 };
 
