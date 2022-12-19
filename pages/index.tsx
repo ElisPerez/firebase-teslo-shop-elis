@@ -26,15 +26,22 @@ import Divider from '@mui/material/Divider';
 import { AuthLayout } from '../components/layouts';
 
 import ErrorOutline from '@mui/icons-material/ErrorOutline';
-import { createFruit, deleteFruit, readAllFruits } from '../controllers/fruits.controller';
+import {
+  createFruit,
+  deleteFruit,
+  readAllFruits,
+  updateFruit,
+} from '../controllers/fruits.controller';
 import { IFruit } from '../interfaces/fruit';
 
 type FormData = {
+  id?: string;
   fruit: string;
 };
 
 export const FruitsPage = () => {
   const {
+    setValue,
     register,
     handleSubmit,
     formState: { errors },
@@ -44,19 +51,14 @@ export const FruitsPage = () => {
   const [showError, setShowError] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [fruits, setFruits] = useState<IFruit[]>([]);
-
-  const getAllFruits = async () => {
-    const allFruits = await readAllFruits();
-    if (!allFruits) return;
-    setFruits(allFruits);
-  };
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     getAllFruits();
   }, []);
 
   // ? CREATE Function
-  const onCreateFruit = async ({ fruit }: FormData) => {
+  const onCreateFruit = async (fruit: string) => {
     setIsButtonDisabled(true);
     setShowError(false);
 
@@ -74,7 +76,44 @@ export const FruitsPage = () => {
     }
     setIsButtonDisabled(false);
 
+    setValue('id', undefined);
+    setValue('fruit', '');
+
     getAllFruits();
+  };
+
+  // * READ Function
+  const getAllFruits = async () => {
+    const allFruits = await readAllFruits();
+    if (!allFruits) return;
+    setFruits(allFruits);
+  };
+
+  // ? UPDATE Function
+  const onUpdateFruit = async (id: string, newName: string) => {
+    console.log(`id`, id);
+    console.log(`newName`, newName);
+    setIsButtonDisabled(true);
+    setShowError(false);
+
+    const newFruit = await updateFruit(id, newName);
+
+    if (!newFruit) {
+      setIsButtonDisabled(false);
+      setShowError(true);
+
+      setTimeout(() => {
+        setShowError(false);
+      }, 3000);
+
+      return;
+    }
+    setIsButtonDisabled(false);
+
+    getAllFruits();
+    setValue('id', undefined);
+    setValue('fruit', '');
+    setIsEditing(false);
   };
 
   // !: DELETE Function
@@ -84,9 +123,24 @@ export const FruitsPage = () => {
     getAllFruits();
   };
 
+  const onEditFruit = async (id: string, fruitName: string) => {
+    // console.log(id, fruitName);
+    setIsEditing(true);
+    setValue('id', id);
+    setValue('fruit', fruitName);
+  };
+
+  const handleFruitSubmit = ({ id, fruit }: { id?: string; fruit: string }) => {
+    if (!id) {
+      onCreateFruit(fruit);
+    } else {
+      onUpdateFruit(id, fruit);
+    }
+  };
+
   return (
     <AuthLayout title={'Create New Fruit'}>
-      <form onSubmit={handleSubmit(onCreateFruit)} noValidate>
+      <form onSubmit={handleSubmit(handleFruitSubmit)} noValidate>
         <Box sx={{ width: 350, padding: '10px 20px' }}>
           <Grid container spacing={2}>
             <Grid item xs={12}>
@@ -102,6 +156,23 @@ export const FruitsPage = () => {
               />
             </Grid>
 
+            {isEditing && (
+              <Grid item xs={12}>
+                <TextField
+                  type='text'
+                  label='Fruit ID'
+                  variant='filled'
+                  disabled
+                  fullWidth
+                  {...register('id', {
+                    required: 'This field is required',
+                  })}
+                  error={!!errors.id}
+                  helperText={errors.id?.message}
+                />
+              </Grid>
+            )}
+
             <Grid item xs={12}>
               <TextField
                 type='text'
@@ -116,18 +187,33 @@ export const FruitsPage = () => {
               />
             </Grid>
 
-            <Grid item xs={12}>
-              <Button
-                type='submit'
-                color='secondary'
-                className='circular-btn'
-                size='large'
-                fullWidth
-                disabled={isButtonDisabled}
-              >
-                CREATE FRUIT
-              </Button>
-            </Grid>
+            {isEditing ? (
+              <Grid item xs={12}>
+                <Button
+                  type='submit'
+                  color='secondary'
+                  className='circular-btn'
+                  size='large'
+                  fullWidth
+                  disabled={isButtonDisabled}
+                >
+                  EDIT FRUIT
+                </Button>
+              </Grid>
+            ) : (
+              <Grid item xs={12}>
+                <Button
+                  type='submit'
+                  color='secondary'
+                  className='circular-btn'
+                  size='large'
+                  fullWidth
+                  disabled={isButtonDisabled}
+                >
+                  CREATE FRUIT
+                </Button>
+              </Grid>
+            )}
 
             <Divider />
 
@@ -141,6 +227,11 @@ export const FruitsPage = () => {
                   </Box>
                 </Grid>
 
+                <Grid item xs={2} display='flex' flexDirection='column' alignItems='center'>
+                  <Button variant='text' color='secondary' onClick={() => onEditFruit(id, name)}>
+                    EDIT
+                  </Button>
+                </Grid>
                 <Grid item xs={2} display='flex' flexDirection='column' alignItems='center'>
                   <Button variant='text' color='secondary' onClick={() => onDeleteFruit(id)}>
                     DELETE

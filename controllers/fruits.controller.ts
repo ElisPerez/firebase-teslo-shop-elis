@@ -9,7 +9,7 @@ import {
   setDoc,
   query,
   where,
-  deleteDoc
+  deleteDoc,
 } from '../datafirebase/config';
 import { IFruit } from '../interfaces/fruit';
 import { Fruit, fruitConverter } from '../models';
@@ -21,18 +21,19 @@ import { Fruit, fruitConverter } from '../models';
  * @param {string} fruitName - string - The name of the fruit to create.
  * @returns A Promise that resolves to an IFruit or null.
  */
-const createFruit = async (fruitName: string): Promise<IFruit | null> => {
+const createFruit = async (fruitName: string): Promise<boolean> => {
   try {
-    const docRef = await addDoc(collection(firestore, 'fruits'), { name: fruitName.toUpperCase() });
-    const { id } = docRef;
+    await addDoc(collection(firestore, 'fruits'), { name: fruitName.toUpperCase() });
+    // const docRef = await addDoc(collection(firestore, 'fruits'), { name: fruitName.toUpperCase() });
+    // const { id } = docRef;
 
-    const docSnap = await getDoc(docRef);
-    const { name } = docSnap.data() as { name: string };
+    // const docSnap = await getDoc(docRef);
+    // const { name } = docSnap.data() as { name: string };
 
-    return new Fruit(id, name);
+    return true;
   } catch (error) {
     console.error('Error adding document: ', error);
-    return null;
+    return false;
   }
 };
 
@@ -76,14 +77,19 @@ const readAllFruits = async () => {
   }
 };
 
-
 const updateFruit = async (id: string, fruitName: string) => {
   // Name Collection
-  const fruitsRef = collection(firestore, 'fruits');
+  try {
+    const fruitsRef = collection(firestore, 'fruits');
 
-  await setDoc(doc(fruitsRef, id), {
-    name: fruitName.toUpperCase(),
-  });
+    await setDoc(doc(fruitsRef, id), {
+      name: fruitName.toUpperCase(),
+    });
+    return true;
+  } catch (error) {
+    console.log('An error here', error);
+    return false;
+  }
 };
 
 /**
@@ -91,7 +97,7 @@ const updateFruit = async (id: string, fruitName: string) => {
  * @param {string} id - The id of the document to delete.
  */
 const deleteFruit = async (id: string) => {
-  await deleteDoc(doc(firestore, "fruits", id));
+  await deleteDoc(doc(firestore, 'fruits', id));
 };
 
 // Search
