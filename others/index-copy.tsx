@@ -29,8 +29,9 @@ import ListItemButton from '@mui/material/ListItemButton';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
-import CardActionArea from '@mui/material/CardActionArea';
-import FilterIcon from '@mui/icons-material/Filter';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 
 import EditIcon from '@mui/icons-material/Edit';
 
@@ -55,7 +56,6 @@ import {
   FullMetadata,
   StorageReference,
 } from '../datafirebase/config';
-import { FruitCard } from '../components/fruits/FruitCard';
 
 type FormData = {
   id?: string;
@@ -79,29 +79,6 @@ export const FruitsPage = () => {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [fruits, setFruits] = useState<IFruit[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-
-  // const [isMounted, setIsMounted] = useState(false);
-
-  // * READ Function
-  const getAllFruits = async () => {
-    const allFruits = await readAllFruits();
-    console.log('allFruits:', allFruits);
-    // if (!allFruits) return;
-    setFruits([...allFruits]);
-  };
-
-  // useEffect #1
-  useEffect(() => {
-    getAllFruits();
-  }, []);
-
-  // useEffect #1
-  // useEffect(() => {
-  //   if (!isMounted) {
-  //     getAllFruits();
-  //     setIsMounted(true);
-  //   }
-  // }, [isMounted]);
 
   // Imagenes
   // const [archivoUrl, setArchivoUrl] = useState('');
@@ -178,6 +155,10 @@ export const FruitsPage = () => {
     );
   };
 
+  useEffect(() => {
+    getAllFruits();
+  }, []);
+
   // ? CREATE Function
   const onCreateFruit = async (fruit: string, image: File) => {
     setIsButtonDisabled(true);
@@ -196,7 +177,6 @@ export const FruitsPage = () => {
 
       return;
     }
-
     setIsButtonDisabled(false);
     enqueueSnackbar(`!Se creó la fruta ${fruit.toUpperCase()} satisfactoriamente!`, {
       variant: 'success',
@@ -206,6 +186,13 @@ export const FruitsPage = () => {
     setValue('fruitName', '');
 
     getAllFruits();
+  };
+
+  // * READ Function
+  const getAllFruits = async () => {
+    const allFruits = await readAllFruits();
+    if (!allFruits) return;
+    setFruits(allFruits);
   };
 
   // ? UPDATE Function
@@ -320,8 +307,9 @@ export const FruitsPage = () => {
                 helperText={errors.fruitName?.message}
               />
             </Grid>
-
+            {/* //todo:cambiar input */}
             <Grid item xs={12}>
+              {/* <form onSubmit={submitHandler}> */}
               <TextField
                 type='file'
                 label='Fruit Image'
@@ -333,6 +321,11 @@ export const FruitsPage = () => {
                 error={!!errors.fileList}
                 helperText={errors.fileList?.message}
               />
+
+              {/* <input type='file' onChange={archivoHandler} />
+              <input type='text' name='nombre' placeholder='nombra tu archivo' /> */}
+              {/* <button>Enviar </button> */}
+              {/* </form> */}
             </Grid>
 
             {isEditing ? (
@@ -394,7 +387,8 @@ export const FruitsPage = () => {
           </Grid>
 
           {fruits.map(({ id, name, url }) => (
-            <Card key={id} sx={{ display: 'flex', marginBottom: 3 }}>
+            <>
+              <Card key={id} sx={{ display: 'flex' }}>
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flex: '1 0 auto' }}>
                   <Typography component='div' variant='h5'>
@@ -408,24 +402,52 @@ export const FruitsPage = () => {
                   <IconButton
                     aria-label='edit'
                     color='secondary'
-                    // onClick={() => onEditFruit(id, name)}
+                    onClick={() => onEditFruit(id, name)}
                   >
                     <EditIcon />
                   </IconButton>
 
-                  <IconButton
-                    aria-label='delete'
-                    color='error'
-                    // onClick={() => onDeleteFruit(id)}
-                  >
+                  <IconButton aria-label='delete' color='error' onClick={() => onDeleteFruit(id)}>
                     <DeleteIcon />
                   </IconButton>
                 </Box>
               </Box>
-              <CardActionArea onMouseOver={() =>(<FilterIcon/>)}>
-                <CardMedia component='img' sx={{ width: 151 }} image={url} alt={`image ${name}`} />
-              </CardActionArea>
+              <CardMedia component='img' sx={{ width: 151 }} image={url} alt={`image ${name}`} />
             </Card>
+              {/* Other option */}
+              <Grid
+                container
+                justifyContent={'center'}
+                spacing={2}
+                key={id}
+                sx={{ mb: 2.5, border: '1px solid rgba(0,0,0, .1)', borderRadius: 2 }}
+              >
+                <Grid item xs={7}>
+                  <Box display={'flex'} flexDirection='column'>
+                    {/* image here */}
+                  </Box>
+                </Grid>
+                <Grid item xs={7}>
+                  <Box display={'flex'} flexDirection='column'>
+                    <Typography variant='body1'>{`ID: ${id}`}</Typography>
+                    <Typography variant='body1' color={'blue'}>
+                      {`Name: ${name}`}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={2} display='flex' flexDirection='column' alignItems='center'>
+                  <Button variant='text' color='secondary' onClick={() => onEditFruit(id, name)}>
+                    EDIT
+                  </Button>
+                </Grid>
+                <Grid item xs={2} display='flex' flexDirection='column' alignItems='center'>
+                  <Button variant='text' color='error' onClick={() => onDeleteFruit(id)}>
+                    <DeleteIcon />
+                  </Button>
+                </Grid>
+              </Grid>
+            </>
           ))}
         </Box>
       </form>
