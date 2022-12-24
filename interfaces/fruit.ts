@@ -1,5 +1,6 @@
 export interface IFruit {
   id: string;
   name: string;
-  url: string;
+  imageURL: string;
+  imageName: string;
 }

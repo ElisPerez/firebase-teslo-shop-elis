@@ -27,11 +27,11 @@ import { fruitConverter } from '../adapter';
 const createFruit = async (fruitName: string, image: File): Promise<boolean> => {
   try {
     const data = await uploadImage(image, image.name);
-    
 
     await addDoc(collection(firestore, 'fruits'), {
       name: fruitName.toUpperCase(),
-      image: data?.imageName,
+      imageURL: data?.imageURL,
+      imageName: image.name,
     });
     return true;
   } catch (error) {
@@ -52,12 +52,12 @@ const readAllFruits = async (): Promise<IFruit[]> => {
     // console.log(docSnap);
     const id = docSnap.id;
     const data = docSnap.data();
-    console.log('data image and name:', data.image, data.name);
+    // console.log('data image and name:', data.image, data.name);
     // getUrl
-    const url = data.image;
+    // const url = data.imageURL;
     // const url = await getImageUrl(data.image);
 
-    let fruit = new Fruit(id, data.name, url);
+    let fruit = new Fruit(id, data.name, data.imageURL, data.imageName);
     // let fruit = new Fruit(id, data.name, '/img/no-image.jpg');
     // let fruit = await fruitConverter.fromFirestore(docSnap);
     fruits.push(fruit);

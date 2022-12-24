@@ -56,6 +56,8 @@ import {
   StorageReference,
 } from '../datafirebase/config';
 import { FruitCard } from '../components/fruits/FruitCard';
+import { useFruits } from '../hooks';
+import { FullScreenLoading } from '../components/ui';
 
 type FormData = {
   id?: string;
@@ -64,9 +66,10 @@ type FormData = {
 };
 
 export const FruitsPage = () => {
+  // const { isError, isLoading, fruits } = useFruits('/fruits');
   // Notificaciones MUI
   const { enqueueSnackbar } = useSnackbar();
-
+  
   const {
     setValue,
     register,
@@ -74,12 +77,15 @@ export const FruitsPage = () => {
     formState: { errors },
   } = useForm<FormData>();
   // console.log('errores:', { errors });
-
+  
   const [showError, setShowError] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  const [fruits, setFruits] = useState<IFruit[]>([]);
+  const [fruitsState, setFruitsState] = useState<IFruit[]>([]);
+  const [isLoadingState, setIsLoadingState] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [imgName, setImgName] = useState('');
+  
   // const [isMounted, setIsMounted] = useState(false);
 
   // * READ Function
@@ -87,7 +93,8 @@ export const FruitsPage = () => {
     const allFruits = await readAllFruits();
     console.log('allFruits:', allFruits);
     // if (!allFruits) return;
-    setFruits([...allFruits]);
+    setFruitsState([...allFruits]);
+    setIsLoadingState(false);
   };
 
   // useEffect #1
@@ -106,77 +113,6 @@ export const FruitsPage = () => {
   // Imagenes
   // const [archivoUrl, setArchivoUrl] = useState('');
   // const [docus, setDocus] = useState([]);
-
-  const uploadFileAndMetaData = async (file: Blob) => {
-    const storageRef = ref(storage, 'images/mountains.jpg');
-
-    // Create file metadata including the content type
-    /** @type {any} */
-    const metadata = {
-      contentType: 'image/jpeg',
-    };
-
-    // Upload the file and metadata
-    const uploadTask = uploadBytes(storageRef, file, metadata);
-  };
-
-  const watchProgressUpload = async (file: Blob) => {
-    const storageRef = ref(storage, 'images/rivers.jpg');
-
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    // Register three observers:
-    // 1. 'state_changed' observer, called any time the state changes
-    // 2. Error observer, called on failure
-    // 3. Completion observer, called on successful completion
-    uploadTask.on(
-      'state_changed',
-      snapshot => {
-        // Observe state change events such as progress, pause, and resume
-        // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        console.log('Upload is ' + progress + '% done');
-        switch (snapshot.state) {
-          case 'paused':
-            console.log('Upload is paused');
-            break;
-          case 'running':
-            console.log('Upload is running');
-            break;
-        }
-      },
-      error => {
-        // Handle unsuccessful uploads
-        console.log('No se pudo cargar la imagen. Error:', error);
-        // A full list of error codes is available at
-        // https://firebase.google.com/docs/storage/web/handle-errors
-        switch (error.code) {
-          case 'storage/unauthorized':
-            // User doesn't have permission to access the object
-            console.log(error.code);
-            break;
-          case 'storage/canceled':
-            // User canceled the upload
-            console.log(error.code);
-            break;
-
-          // ...
-
-          case 'storage/unknown':
-            // Unknown error occurred, inspect error.serverResponse
-            console.log(error.code);
-            break;
-        }
-      },
-      () => {
-        // Handle successful uploads on complete
-        // For instance, get the download URL: https://firebasestorage.googleapis.com/...
-        getDownloadURL(uploadTask.snapshot.ref).then(downloadURL => {
-          console.log('File available at', downloadURL);
-        });
-      }
-    );
-  };
 
   // ? CREATE Function
   const onCreateFruit = async (fruit: string, image: File) => {
@@ -205,7 +141,9 @@ export const FruitsPage = () => {
     setValue('id', undefined);
     setValue('fruitName', '');
 
+    // TODO: !!!
     getAllFruits();
+    // window.location.reload();
   };
 
   // ? UPDATE Function
@@ -231,25 +169,36 @@ export const FruitsPage = () => {
       variant: 'success',
     });
 
-    getAllFruits();
-
     setValue('id', undefined);
     setValue('fruitName', '');
 
     setIsEditing(false);
+
+    // TODO: !!!
+    getAllFruits();
+    // window.location.reload();
   };
 
   // !: DELETE Function
   const onDeleteFruit = async (id: string) => {
     await deleteFruit(id);
     enqueueSnackbar('!Me eliminaste! 😵', { variant: 'info' });
+
+    // TODO: !!!
     getAllFruits();
+    // window.location.reload();
   };
 
-  const onEditFruit = async (id: string, fruitName: string) => {
+  const onEditFruitName = async (id: string, fruitName: string) => {
     setValue('id', id);
     setValue('fruitName', fruitName);
     setIsEditing(true);
+  };
+
+  const onEditFruitImage = async (id: string, imageName: string) => {
+    setValue('id', id);
+    setImgName(imageName);
+    setIsEditingImage(true);
   };
 
   const handleFruitSubmit = ({ id, fruitName, fileList }: FormData) => {
@@ -263,6 +212,12 @@ export const FruitsPage = () => {
 
   const onCancelEdit = () => {
     setIsEditing(false);
+    setValue('fruitName', '');
+    setValue('id', '');
+  };
+
+  const onCancelEditImage = () => {
+    setIsEditingImage(false);
     setValue('fruitName', '');
     setValue('id', '');
   };
@@ -324,7 +279,7 @@ export const FruitsPage = () => {
             <Grid item xs={12}>
               <TextField
                 type='file'
-                label='Fruit Image'
+                // label='Fruit Image'
                 variant='filled'
                 fullWidth
                 {...register('fileList', {
@@ -370,6 +325,41 @@ export const FruitsPage = () => {
                   <br />
                 </Grid>
               </>
+            ) : isEditingImage ? (
+              <>
+                <Grid item xs={12}>
+                  <Button
+                    type='submit'
+                    color='secondary'
+                    className='circular-btn'
+                    size='large'
+                    fullWidth
+                    disabled={isButtonDisabled}
+                  >
+                    EDIT FRUIT Image
+                  </Button>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Button
+                    onClick={onCancelEditImage}
+                    color='primary'
+                    className='circular-btn'
+                    size='large'
+                    fullWidth
+                    disabled={isButtonDisabled}
+                  >
+                    CANCEL
+                  </Button>
+                  <br />
+                  <br />
+                  <Divider>
+                    <Chip label='Fruit List' />
+                  </Divider>
+                  <br />
+                  <br />
+                </Grid>
+              </>
             ) : (
               <Grid item xs={12}>
                 <Button
@@ -392,41 +382,53 @@ export const FruitsPage = () => {
               </Grid>
             )}
           </Grid>
-
-          {fruits.map(({ id, name, url }) => (
-            <Card key={id} sx={{ display: 'flex', marginBottom: 3 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flex: '1 0 auto' }}>
-                  <Typography component='div' variant='h5'>
-                    {name}
-                  </Typography>
-                  <Typography variant='subtitle1' color='text.secondary' component='div'>
-                    {id}
-                  </Typography>
-                </CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', pl: 1, pb: 1 }}>
-                  <IconButton
-                    aria-label='edit'
-                    color='secondary'
-                    // onClick={() => onEditFruit(id, name)}
-                  >
-                    <EditIcon />
-                  </IconButton>
-
-                  <IconButton
-                    aria-label='delete'
-                    color='error'
-                    // onClick={() => onDeleteFruit(id)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+          {isLoadingState ? (
+            <FullScreenLoading />
+          ) : (
+            fruitsState.map(({ id, name, imageName, imageURL }) => (
+              <Card key={id} sx={{ display: 'flex', marginBottom: 3 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                  <CardContent sx={{ flex: '1 0 auto' }}>
+                    <Typography component='div' variant='h5'>
+                      {name}
+                    </Typography>
+                    <Typography variant='subtitle1' color='text.secondary' component='div'>
+                      {id}
+                    </Typography>
+                  </CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', pl: 1, pb: 1 }}>
+                    <CardActionArea
+                        aria-label='edit'
+                        color='secondary'
+                        // Function
+                        onClick={() => onEditFruitName(id, name)}
+                      >
+                        <EditIcon />
+                    </CardActionArea>
+                    <CardActionArea
+                        aria-label='delete'
+                        color='error'
+                        // Function
+                        onClick={() => onDeleteFruit(id)}
+                      >
+                        <DeleteIcon />
+                    </CardActionArea>
+                  </Box>
                 </Box>
-              </Box>
-              <CardActionArea onMouseOver={() =>(<FilterIcon/>)}>
-                <CardMedia component='img' sx={{ width: 151 }} image={url} alt={`image ${name}`} />
-              </CardActionArea>
-            </Card>
-          ))}
+                <CardActionArea
+                  // Function
+                  onClick={() => onEditFruitImage(id, imageName)}
+                >
+                  <CardMedia
+                    component='img'
+                    sx={{ width: 151 }}
+                    image={imageURL}
+                    alt={`image ${name}`}
+                  />
+                </CardActionArea>
+              </Card>
+            ))
+          )}
         </Box>
       </form>
     </FruitLayout>

@@ -15,11 +15,10 @@ export const uploadImage = async (file: Blob, fileName: string) => {
     // 'file' comes from the Blob or File API
     const data = await uploadBytes(folderImagesRef, file);
     // console.log({ metadata, imageRef });
-    
 
     const url = await getImageUrl(data.ref.name);
     return {
-      imageName: url,
+      imageURL: url,
     };
   } catch (error) {
     console.log('An error here', error);

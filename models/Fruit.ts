@@ -10,11 +10,13 @@ import { getImageUrl } from '../utils';
 export class Fruit {
   name: string;
   id: string;
-  url: string;
-  constructor(id: string, name: string, url: string) {
-    this.name = name;
+  imageURL: string;
+  imageName: string;
+  constructor(id: string, name: string, imageURL: string, imageName: string) {
     this.id = id;
-    this.url = url;
+    this.name = name;
+    this.imageURL = imageURL;
+    this.imageName = imageName
   }
 }
 

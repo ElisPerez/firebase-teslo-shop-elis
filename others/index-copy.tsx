@@ -386,7 +386,7 @@ export const FruitsPage = () => {
             )}
           </Grid>
 
-          {fruits.map(({ id, name, url }) => (
+          {fruits.map(({ id, name, imageName, imageURL }) => (
             <>
               <Card key={id} sx={{ display: 'flex' }}>
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -412,7 +412,7 @@ export const FruitsPage = () => {
                   </IconButton>
                 </Box>
               </Box>
-              <CardMedia component='img' sx={{ width: 151 }} image={url} alt={`image ${name}`} />
+              <CardMedia component='img' sx={{ width: 151 }} image={imageURL} alt={`image ${name}`} />
             </Card>
               {/* Other option */}
               <Grid
