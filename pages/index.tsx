@@ -1,63 +1,40 @@
-import { ChangeEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-// Notificaciones MUI
-import { VariantType, useSnackbar } from 'notistack';
+// Firebase
+import { firestore, storage } from '../datafirebase/config';
+import { deleteObject, getDownloadURL, ref } from 'firebase/storage';
 
-// import { Box, Button, Divider, Grid, Link, TextField, Typography } from '@mui/material'; // No usar asi porque es mas lento en dev.
+// Notificaciones MUI
+import { useSnackbar } from 'notistack';
+
+// MUI Components
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
-// import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Avatar from '@mui/material/Avatar';
-import IconButton from '@mui/material/IconButton';
-import FormGroup from '@mui/material/FormGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import FolderIcon from '@mui/icons-material/Folder';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ListItemButton from '@mui/material/ListItemButton';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
 import CardActionArea from '@mui/material/CardActionArea';
-import FilterIcon from '@mui/icons-material/Filter';
-
 import EditIcon from '@mui/icons-material/Edit';
+import ErrorOutline from '@mui/icons-material/ErrorOutline';
 
 import { FruitLayout } from '../components/layouts';
 
-import ErrorOutline from '@mui/icons-material/ErrorOutline';
-import {
-  createFruit,
-  deleteFruit,
-  readAllFruits,
-  updateFruit,
-} from '../controllers/fruits.controller';
+import { createFruit, readAllFruits, updateFruit } from '../controllers/fruits.controller';
 import { IFruit } from '../interfaces/fruit';
 
-// todo: Mover al controller
-import {
-  ref,
-  storage,
-  uploadBytes,
-  uploadBytesResumable,
-  getDownloadURL,
-  FullMetadata,
-  StorageReference,
-} from '../datafirebase/config';
-import { FruitCard } from '../components/fruits/FruitCard';
-import { useFruits } from '../hooks';
+// My Components
 import { FullScreenLoading } from '../components/ui';
+
+// My Utils
+import { uploadImage } from '../utils/uploadImage';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 
 type FormData = {
   id?: string;
@@ -66,33 +43,26 @@ type FormData = {
 };
 
 export const FruitsPage = () => {
-  // const { isError, isLoading, fruits } = useFruits('/fruits');
-  // Notificaciones MUI
   const { enqueueSnackbar } = useSnackbar();
-  
+
   const {
+    getValues,
     setValue,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>();
-  // console.log('errores:', { errors });
-  
-  const [showError, setShowError] = useState(false);
+
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [fruitsState, setFruitsState] = useState<IFruit[]>([]);
   const [isLoadingState, setIsLoadingState] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [imgName, setImgName] = useState('');
-  
-  // const [isMounted, setIsMounted] = useState(false);
 
   // * READ Function
   const getAllFruits = async () => {
     const allFruits = await readAllFruits();
-    console.log('allFruits:', allFruits);
-    // if (!allFruits) return;
     setFruitsState([...allFruits]);
     setIsLoadingState(false);
   };
@@ -102,33 +72,15 @@ export const FruitsPage = () => {
     getAllFruits();
   }, []);
 
-  // useEffect #1
-  // useEffect(() => {
-  //   if (!isMounted) {
-  //     getAllFruits();
-  //     setIsMounted(true);
-  //   }
-  // }, [isMounted]);
-
-  // Imagenes
-  // const [archivoUrl, setArchivoUrl] = useState('');
-  // const [docus, setDocus] = useState([]);
-
   // ? CREATE Function
   const onCreateFruit = async (fruit: string, image: File) => {
     setIsButtonDisabled(true);
-    setShowError(false);
 
-    const newFruit = await createFruit(fruit, image);
+    const isOK = await createFruit(fruit, image);
 
-    if (!newFruit) {
+    if (!isOK) {
       setIsButtonDisabled(false);
-      setShowError(true);
       enqueueSnackbar('!No se pudo crear la fruta!', { variant: 'error' });
-
-      setTimeout(() => {
-        setShowError(false);
-      }, 3000);
 
       return;
     }
@@ -141,26 +93,18 @@ export const FruitsPage = () => {
     setValue('id', undefined);
     setValue('fruitName', '');
 
-    // TODO: !!!
     getAllFruits();
-    // window.location.reload();
   };
 
-  // ? UPDATE Function
+  // * UPDATE Function
   const onUpdateFruit = async (id: string, newName: string) => {
     setIsButtonDisabled(true);
-    setShowError(false);
 
     const newFruit = await updateFruit(id, newName);
 
     if (!newFruit) {
       setIsButtonDisabled(false);
-      setShowError(true);
-      enqueueSnackbar('!No se pudo crear la fruta!', { variant: 'error' });
-
-      setTimeout(() => {
-        setShowError(false);
-      }, 3000);
+      enqueueSnackbar('!No se pudo actualizar la fruta!', { variant: 'error' });
 
       return;
     }
@@ -174,19 +118,110 @@ export const FruitsPage = () => {
 
     setIsEditing(false);
 
-    // TODO: !!!
     getAllFruits();
-    // window.location.reload();
+  };
+
+  // ! UPDATE Image
+  const onUpdateImageFruit = async (id: string, olderImageName: string, file: File) => {
+    setIsButtonDisabled(true);
+
+    try {
+      // #1: Eliminar la imagen en Storage
+      const imageRef = ref(storage, `images/${olderImageName}`);
+      const urlExist = await getDownloadURL(imageRef).catch(error => {
+        switch (error.code) {
+          case 'storage/object-not-found':
+            enqueueSnackbar(`!mira el error del urlExist! 🤷🏻 ${error.code}`, { variant: 'info' });
+            return false
+
+          default:
+            return false
+        }
+      });
+      if (urlExist) {
+        await deleteObject(imageRef).catch(error => {
+          switch (error.code) {
+            case 'storage/object-not-found':
+              return enqueueSnackbar(
+                `!La imagen ${olderImageName} no existe en el documento, pero igual la intentarémos actualizar! 🤷🏻 `,
+                { variant: 'info' }
+              );
+
+            default:
+              return enqueueSnackbar(`!NO SE QUE RAYOS ESTÁ PASANDO AQUI! 🤷🏻 `, {
+                variant: 'info',
+              });
+          }
+        });
+      } else {
+        enqueueSnackbar(
+          `!La imagen ${olderImageName} no existe en el documento, pero igual la intentarémos actualizar! 🤷🏻 `,
+          { variant: 'info' }
+        );
+      }
+    } catch (error) {
+      enqueueSnackbar(`!mira el error del tryCatch! 🤷🏻 ${error}`, { variant: 'info' });
+    }
+
+    try {
+      // #2: Subir la nueva imagen y optener el name y el url
+      const data = await uploadImage(file, file.name);
+
+      // #3: Actualizar el documento en Firestore
+      const fruitsRef = collection(firestore, 'fruits');
+      await setDoc(
+        doc(fruitsRef, id),
+        {
+          imageName: file.name,
+          imageURL: data?.imageURL,
+        },
+        { merge: true }
+      );
+
+      setIsButtonDisabled(false);
+      enqueueSnackbar(
+        `!Se Actualizó la imagen ${olderImageName.toUpperCase()} a ${file.name.toUpperCase()} satisfactoriamente! 💯`,
+        {
+          variant: 'success',
+        }
+      );
+
+      setValue('id', undefined);
+      setValue('fruitName', '');
+
+      setIsEditingImage(false);
+
+      getAllFruits();
+    } catch (error) {
+      console.log({ error });
+      setIsButtonDisabled(false);
+      enqueueSnackbar('!No se pudo actualizar la fruta!', { variant: 'error' });
+
+      return;
+    }
   };
 
   // !: DELETE Function
-  const onDeleteFruit = async (id: string) => {
-    await deleteFruit(id);
-    enqueueSnackbar('!Me eliminaste! 😵', { variant: 'info' });
+  const onDeleteFruit = async (id: string, imageName: string) => {
+    // Store:
+    const imageRef = ref(storage, `images/${imageName}`);
 
-    // TODO: !!!
-    getAllFruits();
-    // window.location.reload();
+    try {
+      await Promise.all([
+        // Store
+        await deleteObject(imageRef),
+
+        // Firestore:
+        deleteDoc(doc(firestore, 'fruits', id)),
+      ]);
+
+      enqueueSnackbar('!Me eliminaste! 😵', { variant: 'info' });
+
+      getAllFruits();
+    } catch (error) {
+      console.log('An error here', error);
+      enqueueSnackbar('!No se eliminó! 🤷🏻 (mira el error en la consola)', { variant: 'error' });
+    }
   };
 
   const onEditFruitName = async (id: string, fruitName: string) => {
@@ -201,9 +236,18 @@ export const FruitsPage = () => {
     setIsEditingImage(true);
   };
 
+  const onHandleImageFruit = async () => {
+    const myId = getValues().id!;
+    const myFile = getValues().fileList[0];
+    if (!myFile) {
+      return enqueueSnackbar('!Seleccione una imagen a subir', { variant: 'error' });
+    }
+    await onUpdateImageFruit(myId, imgName, myFile);
+  };
+
   const handleFruitSubmit = ({ id, fruitName, fileList }: FormData) => {
-    const image = fileList[0];
     if (!id) {
+      const image = fileList[0];
       onCreateFruit(fruitName, image);
     } else {
       onUpdateFruit(id, fruitName);
@@ -236,16 +280,9 @@ export const FruitsPage = () => {
               <Typography variant='h1' component='h1'>
                 Welcome
               </Typography>
-              <Chip
-                label='No se pudo crear la fruta'
-                color='error'
-                icon={<ErrorOutline />}
-                className='fadeIn'
-                sx={{ display: showError ? 'flex' : 'none' }}
-              />
             </Grid>
 
-            {isEditing && (
+            {(isEditing || isEditingImage) && (
               <Grid item xs={12}>
                 <TextField
                   type='text'
@@ -262,33 +299,37 @@ export const FruitsPage = () => {
               </Grid>
             )}
 
-            <Grid item xs={12}>
-              <TextField
-                type='text'
-                label='Create Fruit'
-                variant='filled'
-                fullWidth
-                {...register('fruitName', {
-                  required: 'This field is required',
-                })}
-                error={!!errors.fruitName}
-                helperText={errors.fruitName?.message}
-              />
-            </Grid>
+            {!isEditingImage && (
+              <Grid item xs={12}>
+                <TextField
+                  type='text'
+                  label='Create Fruit'
+                  variant='filled'
+                  fullWidth
+                  {...register('fruitName', {
+                    required: 'This field is required',
+                  })}
+                  error={!!errors.fruitName}
+                  helperText={errors.fruitName?.message}
+                />
+              </Grid>
+            )}
 
-            <Grid item xs={12}>
-              <TextField
-                type='file'
-                // label='Fruit Image'
-                variant='filled'
-                fullWidth
-                {...register('fileList', {
-                  required: 'This field is required',
-                })}
-                error={!!errors.fileList}
-                helperText={errors.fileList?.message}
-              />
-            </Grid>
+            {!isEditing && (
+              <Grid item xs={12}>
+                <TextField
+                  type='file'
+                  // label='Fruit Image'
+                  variant='filled'
+                  fullWidth
+                  {...register('fileList', {
+                    required: 'This field is required',
+                  })}
+                  error={!!errors.fileList}
+                  helperText={errors.fileList?.message}
+                />
+              </Grid>
+            )}
 
             {isEditing ? (
               <>
@@ -329,7 +370,7 @@ export const FruitsPage = () => {
               <>
                 <Grid item xs={12}>
                   <Button
-                    type='submit'
+                    onClick={onHandleImageFruit}
                     color='secondary'
                     className='circular-btn'
                     size='large'
@@ -386,7 +427,7 @@ export const FruitsPage = () => {
             <FullScreenLoading />
           ) : (
             fruitsState.map(({ id, name, imageName, imageURL }) => (
-              <Card key={id} sx={{ display: 'flex', marginBottom: 3 }}>
+              <Card key={id} sx={{ display: 'flex', marginBottom: 3, boxShadow: 10 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                   <CardContent sx={{ flex: '1 0 auto' }}>
                     <Typography component='div' variant='h5'>
@@ -396,23 +437,31 @@ export const FruitsPage = () => {
                       {id}
                     </Typography>
                   </CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', pl: 1, pb: 1 }}>
-                    <CardActionArea
-                        aria-label='edit'
-                        color='secondary'
-                        // Function
-                        onClick={() => onEditFruitName(id, name)}
-                      >
-                        <EditIcon />
-                    </CardActionArea>
-                    <CardActionArea
-                        aria-label='delete'
-                        color='error'
-                        // Function
-                        onClick={() => onDeleteFruit(id)}
-                      >
-                        <DeleteIcon />
-                    </CardActionArea>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      pl: 1,
+                      pb: 1,
+                      justifyContent: 'space-evenly',
+                    }}
+                  >
+                    <Button
+                      variant='contained'
+                      aria-label='edit'
+                      // Function
+                      onClick={() => onEditFruitName(id, name)}
+                    >
+                      <EditIcon color='secondary' />
+                    </Button>
+                    <Button
+                      variant='contained'
+                      aria-label='delete'
+                      // Function
+                      onClick={() => onDeleteFruit(id, imageName)}
+                    >
+                      <DeleteIcon color='error' />
+                    </Button>
                   </Box>
                 </Box>
                 <CardActionArea

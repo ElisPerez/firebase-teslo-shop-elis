@@ -1,30 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import {
-  getFirestore,
-  collection,
-  doc,
-  addDoc,
-  getDoc,
-  getDocs,
-  setDoc,
-  query,
-  where,
-  DocumentData,
-  QueryDocumentSnapshot,
-  SnapshotOptions,
-  DocumentReference,
-  WithFieldValue,
-  deleteDoc,
-} from 'firebase/firestore';
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  uploadBytesResumable,
-  getDownloadURL,
-  FullMetadata,
-  StorageReference,
-} from 'firebase/storage';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // See: https://firebase.google.com/docs/web/learn-more#config-object
 const firebaseConfig = {
@@ -48,30 +24,4 @@ const storage = getStorage();
 // Create a storage reference from our storage service
 // const storageRef = ref(storage); // ?: Esta referencia apunta a la raiz de storage, la imagen se guardaría en la raíz y no dentro de una carpeta.
 
-export {
-  storage,
-  ref,
-  uploadBytes,
-  uploadBytesResumable,
-  getDownloadURL,
-  firebase,
-  collection,
-  firestore,
-  addDoc,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  query,
-  where,
-  deleteDoc,
-};
-export type {
-  DocumentData,
-  QueryDocumentSnapshot,
-  SnapshotOptions,
-  DocumentReference,
-  WithFieldValue,
-  FullMetadata,
-  StorageReference,
-};
+export { firebase, firestore, storage };

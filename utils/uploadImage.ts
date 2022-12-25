@@ -1,4 +1,6 @@
-import { ref, uploadBytes, storage } from '../datafirebase/config';
+
+import { ref, uploadBytes } from 'firebase/storage';
+import { storage } from '../datafirebase/config';
 import { getImageUrl } from './getImageUrl';
 
 /**
@@ -10,11 +12,10 @@ import { getImageUrl } from './getImageUrl';
 export const uploadImage = async (file: Blob, fileName: string) => {
   try {
     // Create a storage reference a la carpeta imagenes
-    const folderImagesRef = ref(storage, `images/${fileName}`); // folderImagesRef now points to 'root/images'
+    const folderImagesRef = ref(storage, `images/${fileName}`);
 
     // 'file' comes from the Blob or File API
     const data = await uploadBytes(folderImagesRef, file);
-    // console.log({ metadata, imageRef });
 
     const url = await getImageUrl(data.ref.name);
     return {

@@ -1,21 +1,10 @@
-import { DocumentData } from 'firebase/firestore';
-import {
-  collection,
-  firestore,
-  addDoc,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  query,
-  where,
-  deleteDoc,
-} from '../datafirebase/config';
+
+import { addDoc, collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import { firestore } from '../datafirebase/config';
 import { IFruit } from '../interfaces/fruit';
 import { Fruit } from '../models';
 
-import { getImageUrl, uploadImage } from '../utils';
-import { fruitConverter } from '../adapter';
+import {  uploadImage } from '../utils';
 
 // CRUD
 
@@ -62,7 +51,7 @@ const readAllFruits = async (): Promise<IFruit[]> => {
     // let fruit = await fruitConverter.fromFirestore(docSnap);
     fruits.push(fruit);
   });
-  console.log('fruits:', fruits);
+  // console.log('fruits:', fruits);
 
   return fruits;
   // } catch (error) {
@@ -83,7 +72,7 @@ const updateFruit = async (id: string, fruitName: string): Promise<boolean> => {
     const fruitsRef = collection(firestore, 'fruits');
     await setDoc(doc(fruitsRef, id), {
       name: fruitName.toUpperCase(),
-    });
+    }, {merge: true});
     return true;
   } catch (error) {
     console.log('An error here', error);
@@ -105,43 +94,5 @@ const deleteFruit = async (id: string): Promise<boolean> => {
     return false;
   }
 };
-
-// const readFruit = async (id: string) => {
-//   try {
-//     // docRef: Name Document
-//     const docRef = doc(firestore, 'fruits', `fruits/${id}`);
-//     const docSnap = await getDoc(docRef);
-//     if (docSnap.exists()) {
-//       // console.log('Document data:', docSnap.data());
-//       return docSnap.data();
-//     } else {
-//       // doc.data() will be undefined in this case
-//       console.log('No such document!');
-//       return null;
-//     }
-//   } catch (error) {
-//     console.log('An error here', error);
-//     return null;
-//   }
-// };
-
-// Search
-// const searchDoc = async (search: string) => {
-//   try {
-//     let fruits = [];
-//     const q = query(collection(firestore, 'fruits'), where('name', '==', search));
-
-//     const querySnapshot = await getDocs(q);
-//     querySnapshot.forEach(doc => {
-//       fruits.push(doc.data());
-
-//       // doc.data() is never undefined for query doc snapshots
-//       console.log(doc.id, ' => ', doc.data());
-//     });
-//   } catch (error) {
-//     console.log('An error here', error);
-//     return null;
-//   }
-// };
 
 export { createFruit, readAllFruits, updateFruit, deleteFruit };
